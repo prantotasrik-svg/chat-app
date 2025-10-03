@@ -819,10 +819,11 @@ def handle_message(data):
 
 # FIXED: Prod-safe startup (Gunicorn for Render, socketio.run for local dev)
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
-    if port == 5000:  # Local dev (no $PORT env)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    if not os.environ.get("PORT"):  # Local dev only
         logging.info("Starting dev server on http://0.0.0.0:5000")
-        socketio.run(app, host='0.0.0.0', port=5000, debug=False, allow_unsafe_werkzeug=True)
-    else:  # Render/prod (use Gunicorn externally)
-        logging.info(f"App ready for Gunicorn on port {port}")
-        # No run here—Gunicorn imports and serves 'app'
+        socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
+    else:
+        logging.info(f"App imported for production (Gunicorn) on port {port}")
+        # Gunicorn handles running 'app'
