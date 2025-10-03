@@ -1,0 +1,21 @@
+# Core web framework
+Flask==2.3.3
+
+# For real-time WebSocket communication
+Flask-SocketIO==5.3.6
+
+# Core dependency of Flask
+Werkzeug==2.3.7
+
+# Production WSGI server (for Render)
+gunicorn==21.2.0
+
+# Async server for SocketIO (gevent worker)
+gevent==23.9.1
+eventlet==0.33.3  # Fallback if needed
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Stable production server (optional fallback)
+waitress==2.1.2

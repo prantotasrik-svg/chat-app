@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}Chat - {{ room.name }}{% endblock %}
+{% block body_class %}chat-page{% endblock %}
+
+{% block content %}
+<div class="page-wrapper-sidebar" style="height: 100vh;">
+    <aside class="page-sidebar">
+        <div class="sidebar-header">
+            <a href="{{ url_for('index') }}" class="sidebar-back-link">← All Rooms</a>
+        </div>
+        <div class="sidebar-content">
+            <div class="current-room-title">
+                <h3>{{ room.name }}</h3>
+                <div class="room-id-container">
+                    <span>ID: {{ room.unique_id }}</span>
+                    <button id="copy-room-id-btn" class="btn-icon" title="Copy Room ID">📋</button>
+                </div>
+            </div>
+            <div class="user-list-header">
+                <h4>Users in Room</h4>
+                <button onclick="fetchAndRenderUsers()" class="btn-icon" aria-label="Refresh user list">🔄</button>
+            </div>
+            <ul id="user-list-content" class="user-list"></ul>
+        </div>
+    </aside>
+
+    <main class="page-main">
+        <button class="sidebar-toggle-btn" aria-label="Toggle user list">☰</button>
+        <div id="chat-loading" class="chat-messages" style="display: block;">
+            <!-- Skeleton (repeat 5x for loading effect) -->
+            <div class="message other"><div class="message-bubble" style="background: #f0f0f0; height: 40px; margin: 10px;"></div></div>
+            <div class="message self"><div class="message-bubble" style="background: linear-gradient(135deg, #6a5af9, #d66efd); height: 40px; margin: 10px;"></div></div>
+            <div class="message other"><div class="message-bubble" style="background: #f0f0f0; height: 40px; margin: 10px;"></div></div>
+            <div class="message self"><div class="message-bubble" style="background: linear-gradient(135deg, #6a5af9, #d66efd); height: 40px; margin: 10px;"></div></div>
+            <div class="message other"><div class="message-bubble" style="background: #f0f0f0; height: 40px; margin: 10px;"></div></div>
+        </div>
+        <div id="chat-box" class="chat-messages" style="display: none;">
+            {% if messages and messages|length > 0 %}
+                {% for msg in messages|reverse %}
+                    {% set msg_username = msg.user if msg.user else 'Unknown' %}
+                    {% set is_self = msg_username == username %}  <!-- FIXED: Use passed 'username' var (string-safe) -->
+                    <div class="message {{ 'self' if is_self else 'other' }}" data-user="{{ msg_username }}">
+                        <div class="message-bubble">
+                            <p class="message-content">
+                                {% if is_self %}
+                                    {{ msg.message }}<strong class="username-suffix">: {{ msg_username }}</strong>
+                                {% else %}
+                                    <strong class="username-prefix">{{ msg_username }}:</strong>{{ msg.message }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="message-placeholder">No messages yet. Start the conversation!</div>
+            {% endif %}
+        </div>
+        <form id="chat-form" class="message-form">
+            <input type="text" id="message" class="message-input" placeholder="Type a message..." maxlength="500" autocomplete="off">
+            <button type="submit" class="send-btn" title="Send">➤</button>
+        </form>
+    </main>
+</div>
+<audio id="notification-sound" src="{{ url_for('static', filename='sounds/notification.mp3') }}" preload="auto"></audio>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+<script>
+let socket;
+try {
+    socket = io();
+} catch (error) {
+    console.error('SocketIO failed:', error);
+    socket = null;
+}
+
+const chatBox = document.getElementById('chat-box');
+const form = document.getElementById('chat-form');
+const messageInput = document.getElementById('message');
+const userListContent = document.getElementById('user-list-content');
+const currentUser = {{ username|tojson if username else 'null' }};  <!-- FIXED: Use passed 'username' for JS too -->
+const roomId = {{ room.unique_id|tojson }};  // FIXED: Safe JS escape with |tojson
+const originalTitle = document.title;
+
+// Form submit (unchanged)
+form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!messageInput.value.trim() || !socket || !currentUser) return;
+    const data = { room: roomId, user: currentUser, message: messageInput.value.trim() };
+    socket.emit('send_message', data);
+    messageInput.value = '';
+    messageInput.focus();
+});
+
+// Socket Events (added error handling)
+if (socket) {
+    socket.on('connect', () => {
+        console.log('Socket connected');
+        socket.emit('identify', { username: currentUser });
+        setTimeout(() => socket.emit('join', { room: roomId }), 500);
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('Socket connect error:', error);
+    });
+
+    socket.on('receive_message', (msg) => {
+        if (msg.room === roomId) appendMessage(msg);
+    });
+
+    socket.on('user_list_updated', fetchAndRenderUsers);
+} else {
+    console.warn('SocketIO not available - chat disabled');
+}
+
+// DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    const loadingEl = document.getElementById('chat-loading');
+    setTimeout(() => {
+        loadingEl.style.display = 'none';
+        chatBox.style.display = 'flex';
+        chatBox.scrollTop = chatBox.scrollHeight;  // Scroll to bottom
+    }, 100);
+
+    // Copy ID
+    const copyBtn = document.getElementById('copy-room-id-btn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(roomId).then(() => {
+                alert('Room ID copied to clipboard!');
+            }).catch(() => {
+                prompt('Copy this ID:', roomId);  // Fallback
+            });
+        });
+    }
+
+    // Sidebar Toggle
+    const toggleBtn = document.querySelector('.sidebar-toggle-btn');
+    const sidebar = document.querySelector('.page-sidebar');
+    if (toggleBtn && sidebar) {
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('sidebar-visible');
+        });
+    }
+
+    // Initial user fetch
+    setTimeout(fetchAndRenderUsers, 500);
+});
+
+// Safe user fetch with error handling
+async function fetchAndRenderUsers() {
+    try {
+        const res = await fetch(`/api/rooms/${roomId}/users`);
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        const users = await res.json();
+        if (users.length === 0) {
+            userListContent.innerHTML = '<li class="user-item-empty">No users in room yet.</li>';
+            return;
+        }
+        userListContent.innerHTML = users.map(u => `
+            <li class="user-item">
+                <a href="/user/${u.username}" class="user-profile-link">${u.username}</a>
+                <span class="status-dot ${u.active_in_room ? 'online' : 'offline'}"></span>
+            </li>
+        `).join('');
+    } catch (e) {
+        console.error('Fetch users error:', e);
+        userListContent.innerHTML = '<li class="user-item-error">Error loading users. Refresh to retry.</li>';
+    }
+}
+
+// Safe appendMessage (no consecutive for now)
+function appendMessage(msg) {
+    if (!msg || !msg.user || !msg.message) return;  // Safeguard
+    const showUser = true;  // Always show for simplicity (no index errors)
+    const div = document.createElement('div');
+    div.className = `message ${msg.user === currentUser ? 'self' : 'other'}`;
+    div.dataset.user = msg.user;
+    div.innerHTML = `
+        <div class="message-bubble">
+            <p class="message-content">
+                ${msg.user === currentUser 
+                    ? `${msg.message}<strong class="username-suffix">: ${msg.user}</strong>`
+                    : `<strong class="username-prefix">${msg.user}:</strong>${msg.message}`
+                }
+            </p>
+        </div>
+    `;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    // Notification sound (if not focused/self)
+    const audio = document.getElementById('notification-sound');
+    if (document.hidden && msg.user !== currentUser && audio) {
+        audio.play().catch(e => console.log('Audio play failed:', e));
+    }
+
+    // Title blink (optional)
+    if (document.hidden) {
+        document.title = `New message - ${originalTitle}`;
+        setTimeout(() => { document.title = originalTitle; }, 2000);
+    }
+}
+</script>
+{% endblock %}

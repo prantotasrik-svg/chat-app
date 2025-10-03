@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile.username }}'s Profile{% endblock %}
+
+{% block body_class %}profile-page{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="public-profile-card">
+        <div class="pfp-placeholder">
+            <p>Under Development</p>
+        </div>
+        <h2>
+            {{ profile.username }}
+            {% if profile.is_verified %}
+            <span class="verified-tick" title="Verified User">✔</span>
+            {% endif %}
+        </h2>
+        <div class="bio-display">
+            <h4>Bio</h4>
+            <p>{{ profile.bio }}</p>
+        </div>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Rooms</a>
+    </div>
+</div>
+{% endblock %}

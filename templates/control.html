@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+  {% extends "base.html" %}
+
+  {% block head %}
+  <style>
+      body { font-family: Arial; padding: 40px; }
+      .box { background: #f9f9f9; padding: 20px; border-radius: 10px; }
+      .error { color: red; }
+      input, button { padding: 8px; font-size: 1rem; margin-bottom: 10px; }
+      button { background: #0078d7; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+      button:hover { background: #005fa3; }
+      .header-section { text-align: center; margin-bottom: 20px; }
+      .form-input { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 5px; }
+      .btn-primary { background: #0078d7; color: #fff; border: none; border-radius: 5px; cursor: pointer; padding: 10px 20px; }
+      .btn-primary:hover { background: #005fa3; }
+      .btn-danger { background: #d70000; color: #fff; border: none; border-radius: 5px; cursor: pointer; padding: 10px 20px; }
+      .btn-danger:hover { background: #a30000; }
+      .btn-secondary { background: #6c757d; color: #fff; border: none; border-radius: 5px; cursor: pointer; padding: 5px 10px; font-size: 0.9rem; }
+      .btn-secondary:hover { background: #5a6268; }
+      .btn-warning { background: #ffc107; color: #000; border: none; border-radius: 5px; cursor: pointer; padding: 5px 10px; font-size: 0.9rem; }
+      .btn-warning:hover { background: #e0a800; }
+      .btn-sm { padding: 5px 10px; font-size: 0.9rem; }
+      .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+      .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 10px; }
+      .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+      .close-button:hover, .close-button:focus { color: black; text-decoration: none; cursor: pointer; }
+      .admin-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+      .admin-table th, .admin-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+      .admin-table th { background-color: #f2f2f2; }
+      .actions { white-space: nowrap; }
+      .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+      .switch input { opacity: 0; width: 0; height: 0; }
+      .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+      .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+      input:checked + .slider { background-color: #2196F3; }
+      input:checked + .slider:before { transform: translateX(26px); }
+      .switch.small { width: 40px; height: 24px; }
+      .switch.small .slider { border-radius: 24px; }
+      .switch.small .slider:before { height: 18px; width: 18px; left: 3px; bottom: 3px; }
+      input:checked + .switch.small .slider:before { transform: translateX(16px); }
+      .room-management-card { margin-bottom: 20px; border: 1px solid #ddd; border-radius: 5px; }
+      .room-management-card details { padding: 10px; }
+      .room-management-card summary { cursor: pointer; font-weight: bold; }
+      .float-right { float: right; }
+      .member-list { list-style: none; padding: 0; }
+      .member-list li { padding: 5px 0; border-bottom: 1px solid #eee; }
+      .form-group { margin-bottom: 10px; }
+      .form-link { text-align: right; }
+      .form-link a { color: #0078d7; text-decoration: none; }
+      .dev-mode-form { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  </style>
+  {% endblock %}
+</head>
+<body>
+  <div class="box">
+    {% block title %}Control Panel{% endblock %}
+
+    {% block body_class %}control-page{% endblock %}
+
+    {% block content %}
+    <div class="container">
+        {% if not access_granted %}
+            <div class="header-section">
+                <h2>Control Panel Access</h2>
+            </div>
+            {% if error %}<p class="error">{{ error }}</p>{% endif %}
+            <form method="POST" class="box">
+                <div class="form-group">
+                    <input type="password" name="password" placeholder="Enter control password" required class="form-input">
+                </div>
+                <button type="submit" class="btn btn-primary">Enter</button>
+            </form>
+        {% else %}
+            <div class="header-section">
+                <h2>Admin Dashboard</h2>
+                <p class="form-link"><a href="{{ url_for('index') }}">Back to rooms</a></p>
+            </div>
+
+            <!-- DEV Mode Section -->
+            <div class="section box">
+                <h4>DEV Mode</h4>
+                <form method="POST" class="dev-mode-form">
+                    <!-- NEW: Hidden input to reliably detect form submission -->
+                    <input type="hidden" name="toggle_dev_mode" value="1">
+                    <label class="switch">
+                        <input type="checkbox" name="dev_mode" onchange="this.form.submit()" {% if session.get('dev_mode') %}checked{% endif %}>
+                        <span class="slider round"></span>
+                    </label>
+                    <span>Enable DEV Mode (password bypass, invisible, see hidden rooms)</span>
+                </form>
+            </div>
+
+            <!-- User Management Section -->
+            <div class="section box">
+                <h4>User Management</h4>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Verified</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr id="user-row-{{ user.username }}">
+                            <td>{{ user.username }}</td>
+                            <td>
+                                <label class="switch small">
+                                    <input type="checkbox" onchange="toggleVerify('{{ user.username }}', this)" {% if user.is_verified %}checked{% endif %}>
+                                    <span class="slider round"></span>
+                                </label>
+                            </td>
+                            <td class="actions">
+                                <button class="btn btn-secondary btn-sm" onclick="showUserDetails('{{ user.username }}')">Details</button>
+                                <button class="btn btn-secondary btn-sm" onclick="loginAs('{{ user.username }}')">Login As</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteUser('{{ user.username }}')">Delete</button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3">No other users found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Room Management Section -->
+            <div class="section box">
+                <h4>Room Management</h4>
+                {% for room in rooms %}
+                <div class="room-management-card" id="room-card-{{ room.unique_id }}">
+                    <details>
+                        <summary>
+                            <strong>{{ room.name }}</strong> (ID: {{ room.unique_id }})
+                            <button class="btn btn-danger btn-sm float-right" onclick="deleteRoom('{{ room.unique_id }}', '{{ room.name }}')">Delete Room</button>
+                        </summary>
+                        <div class="room-details">
+                            <form onsubmit="event.preventDefault(); updateRoom('{{ room.unique_id }}')">
+                                <div class="form-group">
+                                    <label>Description</label>
+                                    <input type="text" id="desc-{{ room.unique_id }}" value="{{ room.description or '' }}" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label>Password (leave blank for none)</label>
+                                    <input type="text" id="pass-{{ room.unique_id }}" value="{{ room.password or '' }}" class="form-input">
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                            </form>
+                            <div class="form-group dev-mode-form">
+                                 <label class="switch small">
+                                    <input type="checkbox" onchange="toggleRoomVisibility('{{ room.unique_id }}', this)" {% if room.hidden %}checked{% endif %}>
+                                    <span class="slider round"></span>
+                                </label>
+                                <span>Hidden from public list</span>
+                            </div>
+                            <h5>Members ({{ room.members|length }})</h5>
+                            <ul class="member-list">
+                                {% for member in room.members %}
+                                <li>
+                                    {{ member }}
+                                    {% if member.lower() != 'pratotasrik72' %}
+                                    <button class="btn btn-danger btn-sm" onclick="banUser('{{ room.unique_id }}', '{{ member }}')">Ban</button>
+                                    {% endif %}
+                                </li>
+                                {% else %}
+                                <li>No members in this room.</li>
+                                {% endfor %}
+                            </ul>
+                            {% if room.banned_users %}
+                            <h5>Banned Users ({{ room.banned_users|length }})</h5>
+                            <ul class="member-list">
+                                {% for banned_user in room.banned_users %}
+                                <li id="banned-{{ room.unique_id }}-{{ banned_user }}">
+                                    {{ banned_user }}
+                                    <button class="btn btn-secondary btn-sm" onclick="unbanUser('{{ room.unique_id }}', '{{ banned_user }}')">Unban</button>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                    </details>
+                </div>
+                {% else %}
+                <p>No rooms found.</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Modal for user details -->
+    <div id="user-details-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h3 id="modal-username"></h3>
+            <div id="modal-body">
+                <p>Loading...</p>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+
+    {% block scripts %}
+    <script>
+    async function adminApiCall(action, body) {
+        try {
+            console.log(`Admin API call: ${action}`, body);  // FIXED: Debug logging
+            const res = await fetch(`/api/admin/${action}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                console.error(`API ${action} failed: ${res.status}`, data);
+                alert(`Error: ${data.error || 'Failed'}`);
+                return { success: false, error: data.error };
+            }
+            console.log(`Admin API success: ${action}`, data);
+            return data;
+        } catch (e) {
+            console.error('Admin API error:', e);
+            alert('Network error. Check console.');
+            return { success: false, error: 'Network error' };
+        }
+    }
+
+    const modal = document.getElementById('user-details-modal');
+    function closeModal() { modal.style.display = 'none'; }
+    window.onclick = (e) => { if (e.target == modal) closeModal(); };
+
+    // FIXED: showUserDetails (shows original plain_password)
+    async function showUserDetails(username) {
+        document.getElementById('modal-username').innerText = `Details for ${username}`;
+        const modalBody = document.getElementById('modal-body');
+        modalBody.innerHTML = '<p>Loading...</p>';
+        modal.style.display = 'block';
+        const data = await adminApiCall('get_user_details', { username });
+        if (data.success) {
+            modalBody.innerHTML = `
+                <p><strong>Username:</strong> ${data.details.username}</p>
+                <p><strong>Bio:</strong> ${data.details.bio || '<em>No bio set</em>'}</p>
+                <p><strong>Hashed Password:</strong> ${data.details.password}</p>  <!-- Truncated hash -->
+                <p><strong>Original Password:</strong> ${data.details.plain_password || 'N/A'}</p>  <!-- FIXED: Real entered password -->
+                <div>
+                    <strong>Actions:</strong>
+                    <p style="font-size: 0.9em; color: #666;">Reset to new random password below.</p>
+                    <button class="btn btn-warning btn-sm" onclick="resetPassword('${data.details.username}')">Reset Password</button>
+                </div>
+            `;
+        } else {
+            modalBody.innerHTML = `<p class="error">Error: ${data.error || 'Could not fetch details.'}</p>`;
+        }
+    }
+
+    // FIXED: resetPassword (endpoint only)
+    async function resetPassword(username) {
+        if (!confirm(`Reset password for "${username}"? User must use new one to login.`)) return;
+        const data = await adminApiCall('reset_password', { username });  // FIXED: 'reset_password' (no full path)
+        if (data.success) {
+            alert(`Reset for "${username}":\n\nNew Password: ${data.new_password}\n\nShare with user.`);
+            closeModal();
+        } else {
+            alert(`Reset failed: ${data.error || 'Unknown error.'}`);
+        }
+    }
+
+    // FIXED: toggleVerify (already correct)
+    async function toggleVerify(username, checkbox) {
+        const data = await adminApiCall('toggle_verify', { username });
+        if (!data.success) {
+            alert(data.error || 'Failed');
+            checkbox.checked = !checkbox.checked;
+        }
+    }
+
+    // FIXED: deleteUser (endpoint only)
+    async function deleteUser(username) {
+        if (!confirm(`Permanently delete "${username}"?`)) return;
+        const data = await adminApiCall('delete_user', { username });  // FIXED: 'delete_user'
+        if (data.success) {
+            document.getElementById(`user-row-${username}`).remove();
+            alert('User deleted.');
+        } else {
+            alert('Delete failed: ' + (data.error || 'Unknown'));
+        }
+    }
+
+    // FIXED: loginAs (endpoint only)
+    async function loginAs(username) {
+        if (!confirm(`Log in as "${username}"? Current session ends.`)) return;
+        const data = await adminApiCall('login_as', { username });  // FIXED: 'login_as'
+        if (data.success) {
+            window.location.href = '/rooms';
+        } else {
+            alert('Login as failed: ' + (data.error || 'Unknown'));
+        }
+    }
+
+    // FIXED: updateRoom (endpoint only)
+    async function updateRoom(roomId) {
+        const description = document.getElementById(`desc-${roomId}`).value;
+        const password = document.getElementById(`pass-${roomId}`).value;
+        const data = await adminApiCall('update_room', { room_id: roomId, description, password });  // FIXED: 'update_room'
+        if (data.success) {
+            alert('Room updated!');
+        } else {
+            alert('Update failed: ' + (data.error || 'Unknown'));
+        }
+    }
+
+    // FIXED: banUser (endpoint only)
+    async function banUser(roomId, username) {
+        if (!confirm(`Ban "${username}" from room?`)) return;
+        const data = await adminApiCall('ban_user', { room_id: roomId, username });  // FIXED: 'ban_user'
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Ban failed: ' + (data.error || 'Unknown'));
+        }
+    }
+
+    // FIXED: deleteRoom (endpoint only)
+    async function deleteRoom(roomId, roomName) {
+        if (!confirm(`Delete room "${roomName}"?`)) return;
+        const data = await adminApiCall('delete_room', { room_id: roomId });  // FIXED: 'delete_room'
+        if (data.success) {
+            document.getElementById(`room-card-${roomId}`).remove();
+            alert('Room deleted.');
+        } else {
+            alert('Delete failed: ' + (data.error || 'Unknown'));
+        }
+    }
+
+    // FIXED: toggleRoomVisibility (endpoint only)
+    async function toggleRoomVisibility(roomId, checkbox) {
+        const data = await adminApiCall('toggle_room_visibility', { room_id: roomId });  // FIXED: 'toggle_room_visibility'
+        if (!data.success) {
+            alert('Visibility toggle failed: ' + (data.error || 'Unknown'));
+            checkbox.checked = !checkbox.checked;
+        }
+    }
+
+    // FIXED: unbanUser (endpoint only)
+    async function unbanUser(roomId, username) {
+        const data = await adminApiCall('unban_user', { room_id: roomId, username });  // FIXED: 'unban_user'
+        if (data.success) {
+            document.getElementById(`banned-${roomId}-${username}`).remove();
+        } else {
+            alert('Unban failed: ' + (data.error || 'Unknown'));
+        }
+    }
+    </script>
+    {% endblock %}
+  </div>
+</body>
+</html>

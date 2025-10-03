@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Select Chat Room</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: auto;
+        padding: 20px;
+        background: #0d60dd;
+      }
+      h1 {
+        text-align: center;
+        font-size: 2rem;
+        margin-bottom: 10px;
+      }
+      h2 {
+        font-size: 1.2rem;
+        margin-top: 30px;
+        margin-bottom: 10px;
+      }
+      ul {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+      }
+      li {
+        padding: 12px 10px;
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+        cursor: pointer;
+        border-radius: 7px;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        transition: background 0.2s;
+      }
+      li:hover,
+      li:active {
+        background-color: #e6f7ff;
+      }
+      #new-room {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 20px;
+      }
+      #new-room input {
+        flex: 1 1 120px;
+        padding: 8px;
+        font-size: 1rem;
+        border: 1px solid #bbb;
+        border-radius: 5px;
+      }
+      #new-room button {
+        padding: 8px 16px;
+        font-size: 1rem;
+        border: none;
+        background: #0078d7;
+        color: #fff;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      #new-room button:hover,
+      #new-room button:active {
+        background: #005fa3;
+      }
+      #room-list-container {
+        margin-top: 30px;
+      }
+      #rooms-list {
+        margin-top: 10px;
+      }
+      #user-list {
+        margin-top: 10px;
+        display: none;
+        background: #fff;
+        border-radius: 7px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+        padding: 10px;
+        border: 1px solid #bbb; /* Add border */
+      }
+      #user-list h3 {
+        margin: 0 0 8px 0;
+        font-size: 1rem;
+      }
+      @media (max-width: 600px) {
+        body {
+          padding: 8px;
+        }
+        h1 {
+          font-size: 1.3rem;
+        }
+        #new-room input,
+        #new-room button {
+          font-size: 0.95rem;
+        }
+        li {
+          font-size: 0.95rem;
+          padding: 10px 7px;
+        }
+      }
+      .online-dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        background: green;
+        border-radius: 50%;
+        margin-right: 7px;
+        margin-left: 3px; /* <-- add this line */
+        vertical-align: middle;
+      }
+      .online-text {
+        color: green;
+        font-size: 0.95em;
+        margin-left: 5px;
+        vertical-align: middle;
+      }
+      .lock-icon {
+        margin-left: 7px;
+        color: #888;
+        font-size: 1.1em;
+      }
+      .big-btn {
+        padding: 12px 24px;
+        font-size: 1.1rem;
+        border-radius: 7px;
+        border: none;
+        background: #0078d7;
+        color: #fff;
+        cursor: pointer;
+        margin-bottom: 5px;
+        transition: background 0.2s;
+      }
+      .big-btn:hover,
+      .big-btn:active {
+        background: #005fa3;
+      }
+      .change-name-btn {
+        padding: 10px 22px;
+        font-size: 1.05rem;
+        border-radius: 7px;
+        border: none;
+        background: linear-gradient(90deg, #0078d7 60%, #00c6fb 100%);
+        color: #fff;
+        cursor: pointer;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition: background 0.2s, box-shadow 0.2s;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+      }
+      .change-name-btn:hover,
+      .change-name-btn:active {
+        background: linear-gradient(90deg, #005fa3 60%, #00a6d7 100%);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      .form-group input {
+        padding: 10px;
+        font-size: 1rem;
+        border: 1px solid #bbb;
+        border-radius: 5px;
+      }
+      .btn {
+        padding: 10px 20px;
+        font-size: 1rem;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-primary {
+        background: #0078d7;
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: #005fa3;
+      }
+      .btn-danger {
+        background: #d70022;
+        color: #fff;
+      }
+      .btn-danger:hover {
+        background: #a6001f;
+      }
+      .section {
+        margin-top: 30px;
+      }
+      .room-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+      }
+      .room-item {
+        padding: 12px 10px;
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+        cursor: pointer;
+        border-radius: 7px;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        transition: background 0.2s;
+      }
+      .room-item:hover,
+      .room-item:active {
+        background-color: #e6f7ff;
+      }
+      .room-name {
+        flex: 1;
+      }
+      .lock-icon {
+        margin-left: 7px;
+        color: #888;
+        font-size: 1.1em;
+      }
+      .form-input {
+        width: 100%;
+        padding: 10px;
+        font-size: 1rem;
+        border: 1px solid #bbb;
+        border-radius: 5px;
+      }
+      .btn-icon {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0;
+        margin-left: 10px;
+      }
+      .user-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .user-list {
+        margin-top: 10px;
+        display: none;
+        background: #fff;
+        border-radius: 7px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+        padding: 10px;
+        border: 1px solid #bbb;
+      }
+      .user-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+      }
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+      .status-dot.online {
+        background: green;
+      }
+      .status-dot.offline {
+        background: red;
+      }
+      .user-name {
+        font-size: 1rem;
+      }
+      .control-panel {
+        margin-top: 20px;
+      }
+      .header-section {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .header-section p {
+        font-size: 1.1rem;
+        color: #333;
+      }
+      .room-item-empty {
+        padding: 12px 10px;
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+        border-radius: 7px;
+        background: #f9f9f9;
+        color: #777;
+        text-align: center;
+      }
+      .profile-btn {
+        float: right;
+        margin-top: -66px;
+        font-size: 1.5rem;
+        width: 8vh;
+        background-color: #abcbf1;
+        padding: 1rem;
+        text-decoration: none;
+        color: #333;
+        border-radius: 5px;
+        transition: background 0.2s;
+      }
+      .profile-btn:hover {
+        background-color: #9abcf1;
+      }
+      .unread-badge {
+        background: #ff5722;
+        color: #fff;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 0.8rem;
+        margin-left: 10px;
+      }
+      .page-wrapper-sidebar {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      .page-sidebar {
+        background: #fff;
+        border-right: 1px solid #ddd;
+        padding: 20px;
+        width: 250px;
+        position: relative;
+      }
+      .sidebar-header {
+        margin-bottom: 5px;
+      }
+        .sidebar-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        color: #333;
+      }
+      .sidebar-content {
+        flex: 1;
+      }
+      .profile-card {
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 7px;
+        background: #f9f9f9;
+      }
+      .profile-card h4 {
+        margin: 0 0 10px 0;
+        font-size: 1.1rem;
+        color: #0078d7;
+      }
+      .profile-card ul {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+      }
+      .profile-card li {
+        padding: 8px 0;
+        border-bottom: 1px solid #ddd;
+        font-size: 0.95rem;
+      }
+      .profile-card li:last-child {
+        border-bottom: none;
+      }
+      .profile-form {
+        display: flex;
+        flex-direction: column;
+      }
+      .profile-form input {
+        margin-bottom: 10px;
+        padding: 10px;
+        font-size: 1rem;
+        border: 1px solid #bbb;
+        border-radius: 5px;
+      }
+      .form-message {
+        margin-top: 10px;
+        font-size: 0.9rem;
+      }
+      .form-message.success {
+        color: green;
+      }
+      .form-message.error {
+        color: red;
+      }
+      .sidebar-footer {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        text-align: center;
+      }
+      .sidebar-toggle-btn {
+        display: none;
+        background: #0078d7;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 15px;
+        cursor: pointer;
+        font-size: 1rem;
+        margin-bottom: 20px;
+      }
+      @media (max-width: 768px) {
+        .page-sidebar {
+          position: fixed;
+          top: 0;
+          left: -250px;
+          height: 100%;
+          overflow-y: auto;
+          transition: left 0.3s;
+        }
+        .page-sidebar.sidebar-visible {
+          left: 0;
+        }
+        .sidebar-toggle-btn {
+          display: block;
+        }
+        .page-main {
+          margin-left: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    {% extends "base.html" %}
+
+    {% block title %}Chat Rooms{% endblock %}
+
+    {% block body_class %}rooms-page{% endblock %}
+
+    {% block content %}
+<div class="page-wrapper-sidebar">
+    <!-- Profile Sidebar -->
+    <aside class="page-sidebar">
+        <div class="sidebar-header">
+            <div class="pfp-placeholder-small">
+                {% if is_admin and not is_impersonating %}
+                <p>Dev</p>
+                {% endif %}
+            </div>
+            <h3>
+                {{ session.username }}
+                {% if user_profile.is_verified %}
+                <span class="verified-tick" title="Verified User">✔</span>
+                {% endif %}
+            </h3>
+        </div>
+        <div class="sidebar-content">
+            <!-- Bio Section -->
+            <div class="profile-card">
+                <h4>Bio</h4>
+                <form id="bio-form" class="profile-form">
+                    <textarea id="bio-textarea" class="form-input" maxlength="150" placeholder="Tell us about yourself...">{{ user_profile.bio or '' }}</textarea>
+                    <button type="submit" class="btn btn-primary">Save Bio</button>
+                </form>
+                <p id="bio-msg" class="form-message success" style="display: none;"></p>
+            </div>
+
+            <!-- Change Name Section -->
+            <div class="profile-card">
+                <h4>Change Username</h4>
+                <form id="change-name-form" class="profile-form">
+                    <input type="text" id="new-username" class="form-input" placeholder="New Username" required>
+                    <input type="password" id="name-change-password" class="form-input" placeholder="Confirm Password" required>
+                    <button type="submit" class="btn btn-primary">Change Name</button>
+                </form>
+                <p id="change-name-msg" class="form-message success" style="display: none;"></p>
+                <p id="change-name-error" class="form-message error" style="display: none;"></p>
+            </div>
+
+            <!-- Joined Rooms Section -->
+            <div class="profile-card">
+                <h4>Your Joined Rooms</h4>
+                <ul id="joined-rooms-list"></ul>
+                <p id="no-rooms-msg" style="display: none; color: #666; text-align: center;"></p>
+                <button id="load-rooms-btn" class="btn btn-secondary">Refresh</button>
+            </div>
+
+            <!-- Change Password Section -->
+            <div class="profile-card">
+                <h4>Change Password</h4>
+                <form id="change-password-form" class="profile-form">
+                    <input type="password" id="current-password" class="form-input" placeholder="Current Password" required>
+                    <input type="password" id="new-password" class="form-input" placeholder="New Password" required>
+                    <button type="submit" class="btn btn-primary">Update</button>
+                </form>
+                <p id="change-password-msg" class="form-message success" style="display: none;"></p>
+                <p id="change-password-error" class="form-message error" style="display: none;"></p>
+            </div>
+
+            <!-- Account Actions -->
+            <div class="profile-card">
+                <h4>Account Actions</h4>
+                <div class="account-actions">
+                    <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+                    {% if is_admin and not is_impersonating %}
+                    <a href="{{ url_for('control_panel') }}" class="btn btn-secondary">Control Panel</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Delete Account Section -->
+            <div class="profile-card">
+                <h4>Delete Account</h4>
+                <form id="delete-account-form" class="profile-form">
+                    <input type="password" id="delete-password" class="form-input" placeholder="Confirm Password" required>
+                    <button type="submit" class="btn btn-danger">Delete Account</button>
+                </form>
+                <p id="delete-error" class="form-message error" style="display: none;"></p>
+            </div>
+
+            <!-- Contact Developer Section -->
+            <div class="profile-card">
+                <h4>Contact Developer</h4>
+                <p>For support or feedback, reach out via WhatsApp:</p>
+                <a href="https://wa.me/8801774640552" class="btn btn-secondary btn-full" target="_blank">Message on WhatsApp (01774640552)</a>
+            </div>
+        </div>
+        <div class="sidebar-footer">
+            {% if is_impersonating %}
+            <a href="{{ url_for('return_to_admin') }}" class="btn btn-warning btn-full">Return to Admin</a>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="page-main">
+        <button class="sidebar-toggle-btn" aria-label="Toggle profile menu">☰</button>
+        <div class="container">
+            <div class="header-section">
+                <h1>Chat Rooms</h1>
+                <p>Select a public room, join by ID, or create a new one.</p>
+            </div>
+
+            <div class="section">
+                <h2>Join by ID</h2>
+                <form id="join-by-id-form" class="form-inline">
+                    <input type="text" id="room-id-input" placeholder="Enter Room ID" class="form-input" required>
+                    <button type="submit" class="btn btn-secondary">Join</button>
+                </form>
+            </div>
+
+            <div class="section">
+                <div class="user-list-header">
+                    <h2>Public Rooms</h2>
+                    <button onclick="fetchAndRenderRooms()" class="btn-icon" aria-label="Refresh public rooms">🔄</button>
+                </div>
+                <ul class="room-list" id="rooms-list">
+                    <li class="room-item-empty">Loading rooms...</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2>Create New Room</h2>
+                <div class="form-group">
+                    <input type="text" id="room-name" placeholder="Room Name" class="form-input" required maxlength="50">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="room-password" placeholder="Password (optional)" class="form-input">
+                </div>
+                <div class="form-group form-check">
+                    <input type="checkbox" id="room-hidden" class="form-check-input">
+                    <label for="room-hidden" class="form-check-label">Hide from public list</label>
+                </div>
+                <button id="create-room-btn" onclick="createRoom()" class="btn btn-primary">Create & Join</button>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Profile Sidebar Logic
+    const loadRoomsBtn = document.getElementById('load-rooms-btn');
+    if (loadRoomsBtn) {
+        loadRoomsBtn.addEventListener('click', loadJoinedRooms);
+        loadJoinedRooms(); // Load on page start
+    }
+
+    // Bio Form Handler
+    const bioForm = document.getElementById('bio-form');
+    if (bioForm) {
+        bioForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const bio = document.getElementById('bio-textarea').value.trim();
+            const msgEl = document.getElementById('bio-msg');
+            msgEl.style.display = 'none';
+            try {
+                const res = await fetch('/api/update_bio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bio })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    msgEl.textContent = data.message || 'Bio updated!';
+                    msgEl.style.display = 'block';
+                } else {
+                    throw new Error(data.error || 'Failed to update bio');
+                }
+            } catch (error) {
+                console.error('Bio update error:', error);
+                msgEl.textContent = 'Error updating bio.';
+                msgEl.className = 'form-message error';
+                msgEl.style.display = 'block';
+            }
+        });
+    }
+
+    // Change Name Form Handler
+    const changeNameForm = document.getElementById('change-name-form');
+    if (changeNameForm) {
+        changeNameForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newUsername = document.getElementById('new-username').value.trim();
+            const password = document.getElementById('name-change-password').value;
+            const msgEl = document.getElementById('change-name-msg');
+            const errorEl = document.getElementById('change-name-error');
+            msgEl.style.display = 'none';
+            errorEl.style.display = 'none';
+            if (!newUsername || !password) {
+                errorEl.textContent = 'Please fill all fields.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            try {
+                const res = await fetch('/api/change_username', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ new_username: newUsername, password })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    alert(data.message || 'Username changed! Reloading...');
+                    window.location.reload();
+                } else {
+                    throw new Error(data.error || 'Failed to change username');
+                }
+            } catch (error) {
+                console.error('Name change error:', error);
+                errorEl.textContent = error.message;
+                errorEl.style.display = 'block';
+            }
+        });
+    }
+
+    // Change Password Form Handler
+    const changePassForm = document.getElementById('change-password-form');
+    if (changePassForm) {
+        changePassForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const currentPass = document.getElementById('current-password').value;
+            const newPass = document.getElementById('new-password').value;
+            const msgEl = document.getElementById('change-password-msg');
+            const errorEl = document.getElementById('change-password-error');
+            msgEl.style.display = 'none';
+            errorEl.style.display = 'none';
+            if (!currentPass || !newPass) {
+                errorEl.textContent = 'Please fill all fields.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            try {
+                const res = await fetch('/api/change_password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ current_password: currentPass, new_password: newPass })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    msgEl.textContent = data.message || 'Password updated!';
+                    msgEl.style.display = 'block';
+                    changePassForm.reset();
+                } else {
+                    throw new Error(data.error || 'Failed to change password');
+                }
+            } catch (error) {
+                console.error('Password change error:', error);
+                errorEl.textContent = error.message;
+                errorEl.style.display = 'block';
+            }
+        });
+    }
+
+    // Delete Account Form Handler
+    const deleteForm = document.getElementById('delete-account-form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!confirm('Are you sure? This action is permanent and cannot be undone!')) return;
+            const password = document.getElementById('delete-password').value;
+            const errorEl = document.getElementById('delete-error');
+            errorEl.style.display = 'none';
+            if (!password) {
+                errorEl.textContent = 'Please enter your password.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            try {
+                const res = await fetch('/api/delete_account', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    alert(data.message || 'Account deleted successfully.');
+                    window.location.href = '/logout';
+                } else {
+                    throw new Error(data.error || 'Failed to delete account');
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                errorEl.textContent = error.message;
+                errorEl.style.display = 'block';
+            }
+        });
+    }
+
+    // Load Joined Rooms Function
+    async function loadJoinedRooms() {
+        const list = document.getElementById('joined-rooms-list');
+        const noRoomsMsg = document.getElementById('no-rooms-msg');
+        if (!list || !noRoomsMsg) return;
+        list.innerHTML = '<li>Loading...</li>';
+        noRoomsMsg.style.display = 'none';
+        try {
+            const res = await fetch('/api/user_rooms');
+            if (!res.ok) throw new Error('Failed to fetch rooms');
+            const rooms = await res.json();
+            list.innerHTML = '';
+            if (rooms.length === 0) {
+                noRoomsMsg.textContent = "You haven't joined any rooms yet.";
+                noRoomsMsg.style.display = 'block';
+            } else {
+                rooms.forEach(room => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${room.name} ${room.protected ? '🔒' : ''}</span>
+                        <button class="btn btn-sm btn-secondary" onclick="event.preventDefault(); joinRoomById('${room.unique_id}', ${room.protected})">Re-join</button>
+                    `;
+                    list.appendChild(li);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading joined rooms:', error);
+            list.innerHTML = '';
+            noRoomsMsg.textContent = 'Error loading rooms. Try refreshing.';
+            noRoomsMsg.style.display = 'block';
+        }
+    }
+
+    // Main Content Logic: Fetch and Render Public Rooms
+    fetchAndRenderRooms();
+
+    async function fetchAndRenderRooms() {
+        const roomList = document.getElementById('rooms-list');
+        if (!roomList) return;
+        roomList.innerHTML = '<li class="room-item-empty">Loading rooms...</li>';
+        try {
+            const res = await fetch('/api/rooms');
+            if (!res.ok) throw new Error('Failed to fetch public rooms');
+            const rooms = await res.json();
+            roomList.innerHTML = '';
+            if (rooms.length === 0) {
+                roomList.innerHTML = '<li class="room-item-empty">No public rooms available. Create one!</li>';
+                return;
+            }
+            rooms.forEach(room => {
+                const li = document.createElement('li');
+                li.className = 'room-item';
+                li.dataset.roomId = room.unique_id;
+                li.dataset.protected = room.protected;
+                li.onclick = (e) => {
+                    if (e.target.tagName !== 'BUTTON') joinRoom(li);
+                };
+                li.innerHTML = `
+                    <span class="room-name">${room.name}</span>
+                    ${room.protected ? '<span class="lock-icon">🔒</span>' : ''}
+                `;
+                roomList.appendChild(li);
+            });
+        } catch (error) {
+            console.error('Error fetching rooms:', error);
+            roomList.innerHTML = '<li class="room-item-empty">Error loading rooms. Check console for details.</li>';
+        }
+    }
+    window.fetchAndRenderRooms = fetchAndRenderRooms;
+
+    // Join Room Function (for public rooms and re-join)
+    async function joinRoom(element) {
+        const roomId = element.dataset.roomId;
+        const isProtected = element.dataset.protected === 'true';
+        await joinRoomById(roomId, isProtected);
+    }
+
+    // Generic Join by ID (used for direct join and re-join)
+    async function joinRoomById(roomId, isProtected = false) {
+        let password = '';
+        if (isProtected) {
+            password = prompt('Enter room password:');
+            if (password === null) return; // User canceled
+        }
+        try {
+            const res = await fetch('/api/join_room', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ unique_id: roomId, password: password || '' })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                window.location.href = `/chat/${roomId}`;
+            } else {
+                alert(`Join failed: ${data.error || 'Unknown error. Check if you are logged in.'}`);
+            }
+        } catch (error) {
+            console.error('Join room error:', error);
+            alert('Network error. Please try again.');
+        }
+    }
+    window.joinRoomById = joinRoomById;
+
+    // Create Room Function (FIXED: Added error handling and validation)
+    async function createRoom() {
+        const name = document.getElementById('room-name').value.trim();
+        const password = document.getElementById('room-password').value;
+        const hidden = document.getElementById('room-hidden').checked;
+        if (!name || name.length > 50) {
+            alert('Room name is required and must be 50 characters or less.');
+            return;
+        }
+        const payload = { name, password: password || '', hidden };
+        try {
+            const res = await fetch('/api/create_room', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                window.location.href = `/chat/${data.unique_id}`;
+            } else {
+                alert(`Create failed: ${data.error || 'Unknown error. Room name might already exist.'}`);
+            }
+        } catch (error) {
+            console.error('Create room error:', error);
+            alert('Network error. Please try again.');
+        }
+    }
+    window.createRoom = createRoom;
+
+    // Join by ID Form Handler (FIXED: Use joinRoomById)
+    const joinForm = document.getElementById('join-by-id-form');
+    if (joinForm) {
+        joinForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const roomId = document.getElementById('room-id-input').value.trim();
+            if (!roomId) {
+                alert('Enter a valid Room ID.');
+                return;
+            }
+            joinRoomById(roomId, true); // Assume protected for direct join
+        });
+    }
+
+    // Sidebar Toggle Logic
+    const toggleBtn = document.querySelector('.sidebar-toggle-btn');
+    const sidebar = document.querySelector('.page-sidebar');
+    if (toggleBtn && sidebar) {
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('sidebar-visible');
+        });
+    }
+});
+</script>
+{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Chat App{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    {% block content %}{% endblock %}
+
+    <!-- FIXED: New impersonation bar at the bottom of the screen -->
+    {% if is_impersonating %}
+    <div class="impersonation-bar">
+        <span>You are viewing as <strong>{{ session.username }}</strong>.</span>
+        <a href="{{ url_for('return_to_admin') }}" class="btn btn-warning btn-sm">Return to Admin Panel</a>
+    </div>
+    {% endif %}
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

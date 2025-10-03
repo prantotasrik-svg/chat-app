@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{ page_title }}</title>
+    <style>
+      body {
+        font-family: Arial;
+        max-width: 95%;
+        margin: auto;
+        padding: 40px;
+      }
+      .box {
+        background: #f9f9f9;
+        padding: 20px;
+        border-radius: 10px;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      input,
+      button {
+        padding: 8px;
+        font-size: 1rem;
+      }
+      .error {
+        color: red;
+      }
+      .nav {
+        margin-bottom: 20px;
+      }
+      .nav a {
+        margin-right: 15px;
+        color: #0078d7;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .nav a:hover {
+        text-decoration: underline;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      .form-link {
+        text-align: center;
+        margin-top: 10px;
+      }
+      .btn {
+        background-color: #0078d7;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 10px;
+        cursor: pointer;
+      }
+      .btn-danger {
+        background-color: red;
+      }
+      /* Additional styles for chat room interface */
+      .header-section {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .section {
+        margin-bottom: 20px;
+      }
+      .form-inline {
+        display: flex;
+        gap: 10px;
+      }
+      .form-input {
+        flex: 1;
+        padding: 10px;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      .btn-secondary {
+        background-color: #6c757d;
+      }
+      .user-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .btn-icon {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2rem;
+      }
+      .room-list {
+        list-style-type: none;
+        padding: 0;
+      }
+      .room-item {
+        padding: 10px;
+        border: 1px solid #0078d7;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .room-item-empty {
+        text-align: center;
+        color: #999;
+      }
+      .room-name {
+        font-weight: bold;
+      }
+      .lock-icon {
+        margin-left: 5px;
+        font-size: 1.2rem;
+      }
+      .user-list-container {
+        border: 1px solid #0078d7;
+        border-radius: 5px;
+        padding: 10px;
+      }
+      .user-item {
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+      }
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 10px;
+      }
+      .status-dot.online {
+        background-color: green;
+      }
+      .status-dot.offline {
+        background-color: red;
+      }
+      .user-name {
+        font-weight: bold;
+      }
+      /* --- Profile Page Specific Styles --- */
+      .profile-page {
+        background-color: #f0f2f5;
+        padding: 40px;
+        border-radius: 10px;
+      }
+      .profile-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .profile-card h3 {
+        margin-top: 0;
+        font-size: 1.5rem;
+        border-bottom: 2px solid #0078d7;
+        padding-bottom: 10px;
+      }
+      .profile-form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .profile-form input {
+        padding: 10px;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        width: 100%;
+      }
+      .profile-form button {
+        padding: 10px;
+        font-size: 1rem;
+        background-color: #0078d7;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .profile-form button.btn-danger {
+        background-color: red;
+      }
+      /* --- End Profile Page Specific Styles --- */
+    </style>
+  </head>
+  <body>
+    {% extends "base.html" %}
+
+    {% block title %}{{ "Login / Register" if page == "login" else "Register" }}{% endblock %}
+
+    {% block content %}
+    <div class="container">
+        <div class="header-section">
+            <h1>{{ "Login / Register" if page == "login" else "Register" }}</h1>
+            {% if page == "login" %}
+                <p>Enter your details below. If the account doesn't exist, it will be created automatically.</p>
+            {% endif %}
+        </div>
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+        <form method="POST">
+            <div class="form-group">
+                <input name="username" placeholder="Username" required class="form-input">
+            </div>
+            <div class="form-group">
+                <input name="password" type="password" placeholder="Password" required class="form-input">
+            </div>
+            <button type="submit" class="btn btn-primary">{{ "Login / Register" if page == "login" else "Register" }}</button>
+        </form>
+        <p class="form-link">Simple and secure—no separate registration needed!</p>
+    </div>
+    {% endblock %}
+
+    {% block scripts %}
+    {% if page == "profile" %}
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // loadJoinedRooms (unchanged)
+            async function loadJoinedRooms() {
+                const btn = document.getElementById("load-rooms-btn");
+                const list = document.getElementById("joined-rooms-list");
+                const noRoomsMsg = document.getElementById("no-rooms-msg");
+                
+                btn.textContent = "Loading...";
+                btn.disabled = true;
+                list.style.display = "none";
+                noRoomsMsg.style.display = "none";
+                
+                try {
+                    const res = await fetch("/api/user_rooms");
+                    const data = await res.json();
+                    
+                    if (!res.ok) {
+                        throw new Error(data.error || "Server error");
+                    }
+                    
+                    const rooms = Array.isArray(data) ? data : [];
+                    
+                    if (rooms.length === 0) {
+                        noRoomsMsg.textContent = "No rooms joined yet. Join some to see them here!";
+                        noRoomsMsg.style.color = "#666";
+                        noRoomsMsg.style.display = "block";
+                        list.innerHTML = "";
+                    } else {
+                        noRoomsMsg.style.display = "none";
+                        list.style.display = "block";
+                        list.innerHTML = "";
+                        
+                        rooms.forEach(room => {
+                            const li = document.createElement("li");
+                            li.innerHTML = `
+                                <span>${room.name} <small>(ID: ${room.unique_id})</small> 
+                                ${room.protected ? '🔒' : ''}</span>
+                                <a href="/chat/${room.unique_id}">Join Again</a>
+                            `;
+                            list.appendChild(li);
+                        });
+                    }
+                } catch (error) {
+                    console.error("Error loading joined rooms:", error);
+                    noRoomsMsg.textContent = `Error: ${error.message}. Please try again.`;
+                    noRoomsMsg.style.color = "red";
+                    noRoomsMsg.style.display = "block";
+                    list.innerHTML = "";
+                } finally {
+                    btn.textContent = "See All Joined Rooms";
+                    btn.disabled = false;
+                }
+            }
+
+            // FIXED: loadUserCode (better error handling + retry)
+            async function loadUserCode(retry = false) {
+                const span = document.getElementById("user-code");
+                if (!span) return;  // Safety
+                span.textContent = "Loading...";
+                
+                try {
+                    const res = await fetch("/api/user_code");
+                    console.log("User code fetch status:", res.status);  // Debug: Check console
+                    if (!res.ok) {
+                        if (res.status === 401) {
+                            span.textContent = "Login required";
+                            console.warn("User code: Unauthorized - re-login");
+                            return;
+                        }
+                        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                    }
+                    const data = await res.json();
+                    console.log("User code data:", data);  // Debug: See response
+                    if (data.user_code && data.user_code.length > 0) {
+                        span.textContent = data.user_code;
+                        span.classList.add("loaded");  // Optional: Style for success
+                    } else {
+                        span.textContent = "No code generated";
+                        if (retry) console.error("User code: Empty after retry");
+                    }
+                } catch (error) {
+                    console.error("Error loading user code:", error);
+                    span.textContent = "Error loading code";
+                    // Auto-retry once after 1s (e.g., network hiccup)
+                    if (!retry) {
+                        setTimeout(() => loadUserCode(true), 1000);
+                    }
+                }
+            }
+
+            // FIXED: toggleHide (refresh code after toggle)
+            async function toggleHide() {
+                const hidden = document.getElementById("hide-toggle").checked;
+                try {
+                    const res = await fetch("/api/hide_profile", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({hidden: hidden ? 1 : 0})
+                    });
+                    if (res.ok) {
+                        alert(hidden ? "Profile hidden!" : "Profile visible!");
+                        loadUserCode();  // FIXED: Refresh code display
+                    } else {
+                        document.getElementById("hide-toggle").checked = !hidden;
+                        alert("Toggle failed");
+                    }
+                } catch (error) {
+                    console.error("Error toggling hide:", error);
+                    document.getElementById("hide-toggle").checked = !hidden;
+                    alert("Error: " + error.message);
+                }
+            }
+
+            // Change Password
+            document.getElementById("change-password-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const currentPass = document.getElementById("current-password").value;
+                const newPass = document.getElementById("new-password").value;
+                
+                const msgEl = document.getElementById("change-password-msg");
+                const errorEl = document.getElementById("change-password-error");
+                
+                msgEl.style.display = "none";
+                errorEl.style.display = "none";
+                
+                try {
+                    const res = await fetch("/api/change_password", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ current_password: currentPass, new_password: newPass })
+                    });
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        msgEl.textContent = data.message;
+                        msgEl.style.display = "block";
+                        document.getElementById("change-password-form").reset();
+                    } else {
+                        errorEl.textContent = data.error || "Failed to change password.";
+                        errorEl.style.display = "block";
+                    }
+                } catch (error) {
+                    errorEl.textContent = "An error occurred. Try again.";
+                    errorEl.style.display = "block";
+                }
+            });
+
+            // Delete Account
+            document.getElementById("delete-account-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const password = document.getElementById("delete-password").value;
+                
+                if (!confirm("Are you sure? This will delete everything permanently.")) return;
+                
+                const msgEl = document.getElementById("delete-msg");
+                const errorEl = document.getElementById("delete-error");
+                
+                msgEl.style.display = "none";
+                errorEl.style.display = "none";
+                
+                try {
+                    const res = await fetch("/api/delete_account", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ password: password })
+                    });
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        msgEl.textContent = data.message;
+                        msgEl.style.display = "block";
+                        setTimeout(() => window.location.href = "/login", 2000);
+                    } else {
+                        errorEl.textContent = data.error || "Failed to delete account.";
+                        errorEl.style.display = "block";
+                    }
+                } catch (error) {
+                    errorEl.textContent = "An error occurred. Try again.";
+                    errorEl.style.display = "block";
+                }
+            });
+
+            // Password Validation
+            document.querySelectorAll("input[name='password'], #new-password").forEach(input => {
+                input.addEventListener("input", () => {
+                    if (input.value.length < 6) {
+                        input.style.borderColor = "red";
+                    } else {
+                        input.style.borderColor = "";
+                    }
+                });
+            });
+
+            // INIT
+            loadUserCode();
+            loadJoinedRooms();  // Auto-load on profile
+        });
+    </script>
+    {% endif %}
+    {% endblock %}
+  </body>
+</html>
