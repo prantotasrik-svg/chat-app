@@ -3,7 +3,7 @@
 {% block body_class %}chat-page{% endblock %}
 
 {% block content %}
-<div class="page-wrapper-sidebar" style="height: 100vh;">
+<div class="page-wrapper-sidebar">  <!-- FIXED: Remove inline height (use CSS 100dvh) -->
     <aside class="page-sidebar">
         <div class="sidebar-header">
             <a href="{{ url_for('index') }}" class="sidebar-back-link">← All Rooms</a>
@@ -56,7 +56,7 @@
             {% endif %}
         </div>
         <form id="chat-form" class="message-form">
-            <input type="text" id="message" class="message-input" placeholder="Type a message..." maxlength="500" autocomplete="off">
+            <input type="text" id="message" class="message-input" placeholder="Type a message..." maxlength="500" autocomplete="off" autofocus>  <!-- FIXED: Autofocus for mobile -->
             <button type="submit" class="send-btn" title="Send">➤</button>
         </form>
     </main>
@@ -117,10 +117,11 @@ if (socket) {
 // DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
     const loadingEl = document.getElementById('chat-loading');
+    const messageInput = document.getElementById('message');
     setTimeout(() => {
         loadingEl.style.display = 'none';
         chatBox.style.display = 'flex';
-        chatBox.scrollTop = chatBox.scrollHeight;  // Scroll to bottom
+        chatBox.scrollTop = chatBox.scrollHeight;
     }, 100);
 
     // Copy ID
@@ -146,6 +147,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial user fetch
     setTimeout(fetchAndRenderUsers, 500);
+
+    // FIXED: Mobile keyboard focus - adjust padding and scroll
+    if (messageInput) {
+        messageInput.addEventListener('focus', () => {
+            // Add extra bottom padding when keyboard opens (mobile)
+            if (window.innerHeight < window.screen.height * 0.9) {  // Detect keyboard
+                document.body.style.paddingBottom = '200px';  // Temp padding (adjust as needed)
+                setTimeout(() => chatBox.scrollTop = chatBox.scrollHeight, 300);
+            }
+        });
+        messageInput.addEventListener('blur', () => {
+            document.body.style.paddingBottom = '';  // Reset on blur
+        });
+    }
 });
 
 // Safe user fetch with error handling
@@ -190,7 +205,7 @@ function appendMessage(msg) {
         </div>
     `;
     chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    chatBox.scrollTop = chatBox.scrollHeight;  // FIXED: Ensure scroll on append (mobile-safe)
 
     // Notification sound (if not focused/self)
     const audio = document.getElementById('notification-sound');
