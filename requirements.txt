@@ -10,9 +10,14 @@ Werkzeug==2.3.7
 # Production WSGI server (for Render)
 gunicorn==21.2.0
 
-# Async server for SocketIO (gevent worker)
-gevent==23.9.1
-eventlet==0.33.3  # Fallback if needed
+# Async server for SocketIO (gevent: primary, supports Python 3.13+)
+gevent>=24.9.0  # FIXED: Latest for Python 3.13 compatibility (fixes Cython 'long' error)
+
+# Cython for gevent build (ensures modern version)
+Cython>=3.0.0
+
+# Fallback async (eventlet if gevent fails)
+eventlet>=0.36.1
 
 # Environment variables
 python-dotenv==1.0.0
